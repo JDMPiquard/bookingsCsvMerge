@@ -88,6 +88,7 @@ bookings.merged$Product_name <-gsub('Standard airportr delivery service','SDS',b
 
 # Create an isBA column
 bookings.merged$isBA <- grepl('BA',bookings.merged$Out.bound_flt_code,ignore.case = T)|grepl('BA',bookings.merged$In.bound_flt_code,ignore.case = T)
+bookings.merged$isBA <- bookings.merged$isBA==T&bookings.merged$Department=='prebook'
 
 # Create an combined product column to simplify sales reporting
 bookings.merged$combinedProductCategory <- paste(bookings.merged$Product_name, bookings.merged$Journey_direction, bookings.merged$isBA)
@@ -111,11 +112,11 @@ bookings.merged$drop_off_Week <- isoweek(bookings.merged$Outward_Journey_Luggage
 
 ### Save to CSV
 # All Bookings including cancelled
-write.csv(bookings.merged, paste(folderPath,File_name,"WithCancelled.csv",sep=""))
+write.csv(bookings.merged, paste(folderPath,File_name,"WithCancelled.csv",sep=""), row.names=FALSE)
 # Only Non-Cancelled Bookings
 #Remove cancelled bookings
 notCancelledBookings.merged <- bookings.merged[bookings.merged$Cancelled==F,]
-write.csv(notCancelledBookings.merged, paste(folderPath,File_name,".csv",sep=""))
+write.csv(notCancelledBookings.merged, paste(folderPath,File_name,".csv",sep=""), row.names=FALSE)
 
 ### Create BA Report
 reportBA <- notCancelledBookings.merged[,c("Flt_booking._ref",
@@ -133,7 +134,7 @@ reportBA <- notCancelledBookings.merged[,c("Flt_booking._ref",
                                            "transaction_payment_total_ex_VAT",
                                            "Promocodes")]
 reportBA <- reportBA[notCancelledBookings.merged$airlineCode=='BA',]
-write.csv(reportBA, paste(folderPath,'BAReport',File_name,".csv",sep=""))
+write.csv(reportBA, paste(folderPath,'BAReport',File_name,".csv",sep=""), row.names=FALSE)
 
 ### Generating Daily Ops Reports
 
@@ -144,21 +145,33 @@ dir.create(todaysOpsFolderPath)
 yesterdaysDate <- Sys.Date() - 1
 yesterdaysOpsFolderPath <- paste(folderPath, 'opsData/',yesterdaysDate,"/",sep="")
 dir.create(yesterdaysOpsFolderPath)
+tomorrowsDate <- Sys.Date() + 1
+tomorrowsOpsFolderPath <- paste(folderPath, 'opsData/',tomorrowsDate,"/",sep="")
+dir.create(tomorrowsOpsFolderPath)
 
 # Daily Collections Report
 dailyCollections <- notCancelledBookings.merged[notCancelledBookings.merged$Outward_Journey_Luggage_Collection_date==todaysDate,]
 #dailyCollections <- dailyCollections[with(dailyCollections, order(Outward_Journey_Luggage_Collection_time)), ]
-write.csv(dailyCollections, paste(todaysOpsFolderPath,'opsCollections',todaysDate,".csv",sep=""))
+write.csv(dailyCollections, paste(todaysOpsFolderPath,'opsCollections',todaysDate,".csv",sep=""), row.names=FALSE)
 
 # Daily Injections and Repatriations Report
 dailyInjectionsRepatriations <- notCancelledBookings.merged[notCancelledBookings.merged$Outward_Journey_Luggage_drop_off_date==todaysDate,]
-write.csv(dailyInjectionsRepatriations, paste(todaysOpsFolderPath,'opsInjectionsAndRepatriations',todaysDate,".csv",sep=""))
+write.csv(dailyInjectionsRepatriations, paste(todaysOpsFolderPath,'opsInjectionsAndRepatriations',todaysDate,".csv",sep=""), row.names=FALSE)
+
+# Update Tomorrow's ops reports with latest data
+# Collections
+tomorrowsCollections <- notCancelledBookings.merged[notCancelledBookings.merged$Outward_Journey_Luggage_Collection_date==tomorrowsDate,]
+write.csv(tomorrowsCollections, paste(tomorrowsOpsFolderPath,'opsCollections',tomorrowsDate,".csv",sep=""), row.names=FALSE)
+# Injections/Repatriations
+tomorrowsInjectionsRepatriations <- notCancelledBookings.merged[notCancelledBookings.merged$Outward_Journey_Luggage_drop_off_date==tomorrowsDate,]
+write.csv(tomorrowsInjectionsRepatriations, paste(tomorrowsOpsFolderPath,'opsInjectionsAndRepatriations',tomorrowsDate,".csv",sep=""), row.names=FALSE)
+
 
 # Update Yesterdays ops reports with latest data
 # Collections
 yesterdaysCollections <- notCancelledBookings.merged[notCancelledBookings.merged$Outward_Journey_Luggage_Collection_date==yesterdaysDate,]
-write.csv(yesterdaysCollections, paste(yesterdaysOpsFolderPath,'opsCollections',yesterdaysDate,".csv",sep=""))
+write.csv(yesterdaysCollections, paste(yesterdaysOpsFolderPath,'opsCollections',yesterdaysDate,".csv",sep=""), row.names=FALSE)
 # Injections/Repatriations
 yesterdaysInjectionsRepatriations <- notCancelledBookings.merged[notCancelledBookings.merged$Outward_Journey_Luggage_drop_off_date==yesterdaysDate,]
-write.csv(yesterdaysInjectionsRepatriations, paste(yesterdaysOpsFolderPath,'opsInjectionsAndRepatriations',yesterdaysDate,".csv",sep=""))
+write.csv(yesterdaysInjectionsRepatriations, paste(yesterdaysOpsFolderPath,'opsInjectionsAndRepatriations',yesterdaysDate,".csv",sep=""), row.names=FALSE)
 
